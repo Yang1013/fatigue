@@ -119,9 +119,9 @@ while True:
         leftEyeHull = cv2.convexHull(leftEye)
         rightEyeHull = cv2.convexHull(rightEye)
         mouthHull = cv2.convexHull(mouth)
-        #cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
-        #cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
-        #cv2.drawContours(frame, [mouthHull], -1, (255, 0, 0), 1)
+        cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+        cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+        cv2.drawContours(frame, [mouthHull], -1, (255, 0, 0), 1)
 
         # check to see if the eye aspect ratio is below the blink
         # threshold, and if so, increment the blink frame counter
