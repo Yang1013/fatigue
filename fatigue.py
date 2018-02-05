@@ -44,7 +44,7 @@ args = vars(ap.parse_args())
 # blink and then a second constant for the number of consecutive
 # frames the eye must be below the threshold
 EYE_AR_THRESH = 0.2
-EYE_AR_CONSEC_FRAMES = 2
+EYE_AR_CONSEC_FRAMES = 1
 MOUTH_AR_THRESH = 0.2
 MOUTH_AR_CONSEC_FRAMES = 30
  
@@ -52,6 +52,8 @@ MOUTH_AR_CONSEC_FRAMES = 30
 COUNTER = 0
 TOTAL = 0
 mCOUNT = 0
+mBEGIN = 0
+begin = False
 mTOTAL = 0
 
 # initialize dlib's face detector (HOG-based) and then create
@@ -117,9 +119,9 @@ while True:
         leftEyeHull = cv2.convexHull(leftEye)
         rightEyeHull = cv2.convexHull(rightEye)
         mouthHull = cv2.convexHull(mouth)
-        cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
-        cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
-        cv2.drawContours(frame, [mouthHull], -1, (255, 0, 0), 1)
+        #cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+        #cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+        #cv2.drawContours(frame, [mouthHull], -1, (255, 0, 0), 1)
 
         # check to see if the eye aspect ratio is below the blink
         # threshold, and if so, increment the blink frame counter
@@ -135,11 +137,14 @@ while True:
             TOTAL += 1
 
         if mar > MOUTH_AR_THRESH:
-            mCOUNT += 1
+            if not begin:
+               mBEGIN = time.time()
+               begin = True
         elif mar < MOUTH_AR_THRESH:
-            mCOUNT = 0
-        if mCOUNT == MOUTH_AR_CONSEC_FRAMES:
+            begin = False
+        if time.time() - mBEGIN > 3 and begin:
             mTOTAL += 1
+            mBEGIN += 10000
         
         # draw the total number of blinks on the frame along with
 	# the computed eye aspect ratio for the frame
