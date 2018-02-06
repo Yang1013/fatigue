@@ -22,12 +22,15 @@ def eye_aspect_ratio(eye):
 
     # compute the eye aspect ratio
     ear = (A + B) / (2.0 * C)
-
-    # return the eye aspect ratio
     return ear
 
 def mouth_aspect_ratio(mouth):
+    # compute the euclidean distances between the horizontal
+    # mouth landmark (x, y)-coordinates
     A = dist.euclidean(mouth[12], mouth[16])
+    
+    # compute the euclidean distances between the vertical
+    # mouth landmark (x, y)-coordinates
     B = dist.euclidean(mouth[14], mouth[18])
     mar = B / A
     return mar
@@ -40,21 +43,23 @@ ap.add_argument("-v", "--video", type=str, default="",
                 help="path to input video file")
 args = vars(ap.parse_args())
 
-# define two constants, one for the eye aspect ratio to indicate
+# define constants, one for the eye aspect ratio to indicate
 # blink and then a second constant for the number of consecutive
 # frames the eye must be below the threshold
 EYE_AR_THRESH = 0.2
 EYE_AR_CONSEC_FRAMES = 1
 MOUTH_AR_THRESH = 0.2
-MOUTH_AR_CONSEC_FRAMES = 30
  
-# initialize the frame counters and the total number of blinks
-COUNTER = 0
-TOTAL = 0
-mCOUNT = 0
+# initialize the frame counters and the total number of blinks/yawns
+eye_count = 0
+total_blink = 0
+
+eye_close = 0
+eCLOSE = False
+
 mBEGIN = 0
 begin = False
-mTOTAL = 0
+total_yawn = 0
 
 # initialize dlib's face detector (HOG-based) and then create
 # the facial landmark predictor
@@ -102,15 +107,15 @@ while True:
         shape = predictor(gray, rect)
         shape = face_utils.shape_to_np(shape)
 
-        # extract the left and right eye coordinates, then use the
-        # coordinates to compute the eye aspect ratio for both eyes
+        # extract the left eye, right eye and mouth coordinates, 
+        # then compute the aspect ratio for both eyes and mouth
         leftEye = shape[lStart:lEnd]
         rightEye = shape[rStart:rEnd]
         mouth = shape[mStart:mEnd]
         leftEAR = eye_aspect_ratio(leftEye)
         rightEAR = eye_aspect_ratio(rightEye)
-
         mar = mouth_aspect_ratio(mouth)
+        
         # average the eye aspect ratio together for both eyes
         ear = (leftEAR + rightEAR) / 2.0
 
@@ -119,40 +124,52 @@ while True:
         leftEyeHull = cv2.convexHull(leftEye)
         rightEyeHull = cv2.convexHull(rightEye)
         mouthHull = cv2.convexHull(mouth)
-        cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
-        cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
-        cv2.drawContours(frame, [mouthHull], -1, (255, 0, 0), 1)
-
+        #cv2.drawContours(frame, [leftEyeHull], -1, (0, 255, 0), 1)
+        #cv2.drawContours(frame, [rightEyeHull], -1, (0, 255, 0), 1)
+        #cv2.drawContours(frame, [mouthHull], -1, (255, 0, 0), 1)
+        
         # check to see if the eye aspect ratio is below the blink
         # threshold, and if so, increment the blink frame counter
         if ear < EYE_AR_THRESH:
-            COUNTER += 1
+            eye_count += 1
+            if not eCLOSE:
+                eye_close = time.time()
+                eCLOSE = True
         # otherwise, the eye aspect ratio is not below the blink
         # threshold, reset the eye frame counter
         elif ear > EYE_AR_THRESH:
-            COUNTER = 0
+            eye_count = 0
+            eCLOSE = False
         # if the eyes were closed for a sufficient number of frames
         # then increment the total number of blinks
-        if COUNTER == EYE_AR_CONSEC_FRAMES:
-            TOTAL += 1
+        if eye_count == EYE_AR_CONSEC_FRAMES:
+            total_blink += 1
 
+        if time.time() - eye_close > 5 and eCLOSE:
+            print("WARNIG!!!")
+
+        # if the mouth open for more than 3 seconds, incement the
+        # total number of yawns
         if mar > MOUTH_AR_THRESH:
             if not begin:
                mBEGIN = time.time()
                begin = True
         elif mar < MOUTH_AR_THRESH:
             begin = False
-        if time.time() - mBEGIN > 3 and begin:
-            mTOTAL += 1
+        if time.time() - mBEGIN > 3 and begin :
+            total_yawn += 1
             mBEGIN += 10000
+
+        # percentage of eye closure
+        
         
         # draw the total number of blinks on the frame along with
 	# the computed eye aspect ratio for the frame
-        cv2.putText(frame, "Blinks: {}".format(TOTAL), (10, 30),
+        cv2.putText(frame, "Blinks: {}".format(total_blink), (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.putText(frame, "EAR: {:.2f}".format(ear), (300, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
-        cv2.putText(frame, "Mouth: {}".format(mTOTAL), (10, 60),
+        cv2.putText(frame, "Mouth: {}".format(total_yawn), (10, 60),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         cv2.putText(frame, "MAR: {:.2f}".format(mar), (300, 60),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
