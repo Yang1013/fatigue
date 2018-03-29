@@ -1,5 +1,6 @@
 from scipy.spatial import distance as dist
 import numpy as np
+import time
 
 EYE_THRESH = 0.2
 MOUTH_THRESH = 0.2
@@ -46,3 +47,30 @@ def mouth_open_detector(mouth):
         return True
     else:
         return False
+
+def initial(shape):
+    # dist between eyes
+    A = dist.euclidean(shape[36], shape[45])
+    # dist between nose
+    B = dist.euclidean(shape[27], shape[33])
+    # slope of line between eyes
+    C = (shape[45][1] - shape[36][1]) / (shape[45][0] - shape[36][0])
+
+    return A, B, C
+
+def pos(shape, dist_btw_eyes, dist_btw_nose, slope_btw_eyes):
+    A, B, C = initial(shape)
+    if C < -0.087 or C > 0.087:
+        return True
+    if A/B < 0.8*(dist_btw_eyes/dist_btw_nose):
+    # if B < 0.85*dist_btw_nose
+        return True
+    if A > 1.2*dist_btw_eyes or A < 0.8*dist_btw_eyes:
+        return True
+
+def update_timer(state, timer_state):
+    if state and timer_state < 0:
+        return time.time()
+    elif not state:
+        return -1
+    return timer_state
