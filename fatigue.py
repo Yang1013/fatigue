@@ -10,12 +10,6 @@ import cv2
 import face_recognition
 import myDetector
 
-# construct the argument parse and parse the arguments
-ap = argparse.ArgumentParser()
-ap.add_argument("-p", "--shape-predictor", required=True,
-                help="path to facial landmark predictor")
-args = vars(ap.parse_args())
-
 EYE_CLOSE_TIMES  = 2
 MOUTH_OPEN_TIMES = 2
 ABNORMAL_TIMES   = 2
@@ -28,53 +22,11 @@ slope_btw_eyes   = -1
 # initial current user
 user = None
 
-# initialize dlib's face detector (HOG-based) and then create
-# the facial landmark predictor
-print("[INFO] loading facial landmark predictor...")
-detector = dlib.get_frontal_face_detector()
-predictor = dlib.shape_predictor(args["shape_predictor"])
-
 # grab the indexes of the facial landmarks for the left and
 # right eye, respectively
 (lStart, lEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (rStart, rEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 (mStart, mEnd) = face_utils.FACIAL_LANDMARKS_IDXS["mouth"]
-
-# start the video stream thread
-print("[INFO] starting video stream thread...")
-vs = VideoStream(src=0).start()
-# vs = VideoStream(usePiCamera=True).start()
-time.sleep(1.0)
-
-while True:
-    # grab the frame from the threaded video file stream, resize
-    # it, and convert it to grayscale channels)
-    frame = vs.read()
-    frame = imutils.resize(frame, width=450)
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    # detect faces in the grayscale frame
-    rects = detector(gray, 0)
-
-    # loop over the face detections
-    for rect in rects:
-        # determine the facial landmarks for the face region, then
-        # convert the facial landmark (x, y)-coordinates to a NumPy
-        # array
-        shape = predictor(gray, rect)
-        shape = face_utils.shape_to_np(shape)       
-         
-    # show the frame
-    cv2.imshow("Frame", frame)
-    key = cv2.waitKey(1) & 0xFF
-
-    # if the `p` key was pressed, then complete initialize
-    if key == ord("p"):
-        dist_btw_eyes, dist_btw_nose, slope_btw_eyes = myDetector.initial(shape)
-        cv2.imwrite("user.jpg", frame) 
-        print("[INFO] Initial Complete")
-        break
-    
-time.sleep(1.0)
 
 # initialize the value
 blink_frequency  = 0
@@ -88,6 +40,62 @@ timer_freq       = time.time()
 timer_sleepy     = -1
 timer_yawn       = -1
 timer_abnormal   = -1
+
+def initial():
+  time.sleep(1.0)
+  vs = VideoStream(src=0).start()
+  while True:
+      # grab the frame from the threaded video file stream, resize
+      # it, and convert it to grayscale channels)
+      frame = vs.read()
+      frame = imutils.resize(frame, width=450)
+      gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+      # detect faces in the grayscale frame
+      rects = detector(gray, 0)
+
+      # loop over the face detections
+      for rect in rects:
+          # determine the facial landmarks for the face region, then
+          # convert the facial landmark (x, y)-coordinates to a NumPy
+          # array
+          shape = predictor(gray, rect)
+          shape = face_utils.shape_to_np(shape)           
+      # show the frame
+      cv2.imshow("Frame", frame)
+      key = cv2.waitKey(1) & 0xFF
+
+      # if the `p` key was pressed, then complete initialize
+      if key == ord("p"):
+          global dist_btw_eyes, dist_btw_nose, slope_btw_eyes 
+          dist_btw_eyes, dist_btw_nose, slope_btw_eyes = myDetector.initial(shape)
+          cv2.imwrite("user.jpg", frame) 
+          print("[INFO] Initial Complete")
+          global timer_freq
+          timer_freq       = time.time()
+          global timer_sleepy
+          timer_sleepy     = -1
+          global timer_yawn
+          timer_yawn       = -1
+          global timer_abnormal
+          timer_abnormal   = -1
+          vs.stop()
+          return
+
+# construct the argument parse and parse the arguments
+ap = argparse.ArgumentParser()
+ap.add_argument("-p", "--shape-predictor", required=True,
+                help="path to facial landmark predictor")
+args = vars(ap.parse_args())
+
+# initialize dlib's face detector (HOG-based) and then create
+# the facial landmark predictor
+print("[INFO] loading facial landmark predictor...")
+detector = dlib.get_frontal_face_detector()
+predictor = dlib.shape_predictor(args["shape_predictor"])
+
+initial()    
+time.sleep(1.0)
+vs = VideoStream(src=0).start()
 
 # loop over frames from the video stream
 while True:
@@ -150,7 +158,7 @@ while True:
         timer_abnormal = myDetector.update_timer(abnormal, timer_abnormal)
         if timer_now - timer_abnormal >= ABNORMAL_TIMES and timer_abnormal > 0:
             print("abnormal pos detected")
-            timer_abnormal = 0
+            timer_abnormal = -1
          
     # show the frame
     cv2.imshow("Frame", frame)
@@ -163,17 +171,26 @@ while True:
         frame = imutils.resize(frame, width=450)
         cv2.imshow("Frame", frame)
         cv2.imwrite("unknown.jpg", frame)
-        user_image = face_recognition.load_image_file("user.jpg")
-        unknown_image = face_recognition.load_image_file("unknown.jpg")
-        print("unknown_image")
-        if type(unknown_image) != type(None):
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        rects = detector(gray, 0)
+        
+        if len(rects) > 0:
+          user_image = face_recognition.load_image_file("user.jpg")
+          unknown_image = face_recognition.load_image_file("unknown.jpg")
+
           user_encoding = face_recognition.face_encodings(user_image)[0]
-          unknown_encoding = face_recognition.face_encodings(unknown_image)[0]
-          result = face_recognition.compare_faces([user_encoding], unknown_encoding)
+          try:
+            unknown_encoding = face_recognition.face_encodings(unknown_image)[0]
+          except IndexError:
+            pass
+          
+          result = face_recognition.compare_faces([user_encoding], unknown_encoding, tolerance = 0.4)
           print(result)
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("t"):
+          initial()
           break
 
     # if 'q' is pressed, break from the loop

@@ -65,7 +65,7 @@ def pos(shape, dist_btw_eyes, dist_btw_nose, slope_btw_eyes):
     if A/B < 0.8*(dist_btw_eyes/dist_btw_nose):
     # if B < 0.85*dist_btw_nose
         return True
-    if A > 1.2*dist_btw_eyes or A < 0.8*dist_btw_eyes:
+    if A > 1.2*dist_btw_eyes:
         return True
 
 def update_timer(state, timer_state):
