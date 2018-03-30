@@ -9,6 +9,7 @@ import dlib
 import cv2
 import face_recognition
 import myDetector
+import json
 
 EYE_CLOSE_TIMES  = 2
 MOUTH_OPEN_TIMES = 2
@@ -40,6 +41,8 @@ timer_freq       = time.time()
 timer_sleepy     = -1
 timer_yawn       = -1
 timer_abnormal   = -1
+
+data = {"frequency" : 0, "close_eye" : 'N', "yawn" : 'N', "posture" : 'N', "unknown" : 'N'}
 
 def initial():
   time.sleep(1.0)
@@ -134,32 +137,38 @@ while True:
             blink_detected = True
         elif not eye_close:
             blink_detected = False
-            
-        if timer_now - timer_freq >= 10:
-            print(blink_frequency)
-            timer_freq = timer_now
-            blink_frequency = 0
 
         # if the eye close for more than 2 seconds,
         # print sleepy message
         timer_sleepy = myDetector.update_timer(eye_close, timer_sleepy)
         if timer_now - timer_sleepy >= EYE_CLOSE_TIMES and timer_sleepy > 0:
-            print("sleepy detected")
+            data["close_eye"] = 'Y'
             timer_sleepy = 0
         
         # if the mouth open for more than 2 seconds,
         # print yawn message
         timer_yawn = myDetector.update_timer(mouth_open, timer_yawn)  
         if timer_now - timer_yawn >= MOUTH_OPEN_TIMES and timer_yawn > 0:
-            print("yawn detected")
+            data["yawn"] = 'Y'
             timer_yawn = 0
 
         # see if abnormal pos detected
         timer_abnormal = myDetector.update_timer(abnormal, timer_abnormal)
         if timer_now - timer_abnormal >= ABNORMAL_TIMES and timer_abnormal > 0:
-            print("abnormal pos detected")
+            data["posture"] = 'Y'
             timer_abnormal = -1
-         
+
+        if timer_now - timer_freq >= 60:
+            if blink_frequency >= 99:
+              data["frequency"] = 99
+            else:
+              data["frequency"] = blink_frequency
+            final = json.dumps(data)
+            with open("rrr.txt", 'w') as f:
+              f.write(final)
+            timer_freq = timer_now
+            blink_frequency = 0
+
     # show the frame
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
@@ -186,7 +195,8 @@ while True:
             pass
           
           result = face_recognition.compare_faces([user_encoding], unknown_encoding, tolerance = 0.4)
-          print(result)
+          if result[0] == True:
+            data["unknown"] = 'Y'
 
         key = cv2.waitKey(1) & 0xFF
         if key == ord("t"):
