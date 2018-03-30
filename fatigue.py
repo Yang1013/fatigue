@@ -7,6 +7,7 @@ import imutils
 import time
 import dlib
 import cv2
+import face_recognition
 import myDetector
 
 # construct the argument parse and parse the arguments
@@ -23,6 +24,9 @@ ABNORMAL_TIMES   = 2
 dist_btw_eyes    = -1
 dist_btw_nose    = -1
 slope_btw_eyes   = -1
+
+# initial current user
+user = None
 
 # initialize dlib's face detector (HOG-based) and then create
 # the facial landmark predictor
@@ -65,7 +69,8 @@ while True:
 
     # if the `p` key was pressed, then complete initialize
     if key == ord("p"):
-        dist_btw_eyes, dist_btw_nose, slope_btw_eyes = myDetector.initial(shape) 
+        dist_btw_eyes, dist_btw_nose, slope_btw_eyes = myDetector.initial(shape)
+        cv2.imwrite("user.jpg", frame) 
         print("[INFO] Initial Complete")
         break
     
@@ -79,10 +84,10 @@ yawn             = False
 abnormal         = False
 
 # initialize some time variables
-timer_freq     = time.time()
-timer_sleepy   = -1
-timer_yawn     = -1
-timer_abnormal = -1
+timer_freq       = time.time()
+timer_sleepy     = -1
+timer_yawn       = -1
+timer_abnormal   = -1
 
 # loop over frames from the video stream
 while True:
@@ -151,7 +156,27 @@ while True:
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
 
-    # if the `q` key was pressed, break from the loop
+    # if 't' is pressed, see if other person come
+    if key == ord("t"):
+      while True:
+        frame = vs.read()
+        frame = imutils.resize(frame, width=450)
+        cv2.imshow("Frame", frame)
+        cv2.imwrite("unknown.jpg", frame)
+        user_image = face_recognition.load_image_file("user.jpg")
+        unknown_image = face_recognition.load_image_file("unknown.jpg")
+        print("unknown_image")
+        if type(unknown_image) != type(None):
+          user_encoding = face_recognition.face_encodings(user_image)[0]
+          unknown_encoding = face_recognition.face_encodings(unknown_image)[0]
+          result = face_recognition.compare_faces([user_encoding], unknown_encoding)
+          print(result)
+
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord("t"):
+          break
+
+    # if 'q' is pressed, break from the loop
     if key == ord("q"):
         cv2.destroyAllWindows()
         break
