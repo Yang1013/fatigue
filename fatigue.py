@@ -20,6 +20,8 @@ dist_btw_eyes    = -1
 dist_btw_nose    = -1
 slope_btw_eyes   = -1
 
+icon = cv2.imread("./1.png")
+
 # initial current user
 user = None
 
@@ -67,7 +69,7 @@ def initial():
           shape = predictor(gray, rect)
           shape = face_utils.shape_to_np(shape)           
       # show the frame
-      cv2.imshow("Frame", frame)
+      cv2.imshow("icon", icon)
       key = cv2.waitKey(1) & 0xFF
 
       # if the `p` key was pressed, then complete initialize
@@ -140,6 +142,7 @@ while True:
         # compute blink frequency
         if eye_close and not blink_detected:
             blink_frequency += 1
+            print(blink_frequency)
             blink_detected = True
         elif not eye_close:
             blink_detected = False
@@ -162,6 +165,7 @@ while True:
         timer_sleepy = myDetector.update_timer(eye_close, timer_sleepy)
         if timer_now - timer_sleepy >= EYE_CLOSE_TIMES and timer_sleepy > 0:
             data["close_eye"] = 'y'
+            print("eye_close")
             timer_sleepy = 0
         
         # if the mouth open for more than 2 seconds,
@@ -169,20 +173,23 @@ while True:
         timer_yawn = myDetector.update_timer(mouth_open, timer_yawn)  
         if timer_now - timer_yawn >= MOUTH_OPEN_TIMES and timer_yawn > 0:
             data["yawn"] = 'y'
+            print("yawn")
             timer_yawn = 0
 
         # see if abnormal pos detected
         timer_abnormal = myDetector.update_timer(abnormal, timer_abnormal)
         if timer_now - timer_abnormal >= ABNORMAL_TIMES and timer_abnormal > 0:
             data["posture"] = 'y'
+            print("posture")
             timer_abnormal = -1
 
     # show the frame
-    cv2.imshow("Frame", frame)
+    cv2.imshow("icon", icon)
     key = cv2.waitKey(1) & 0xFF
 
     # if 't' is pressed, see if other person come
     if key == ord("t"):
+      print("[INFO] unknown detecting starts") 
       time.sleep(1.0)
       i = 0
       timer_freq = time.time()
@@ -193,7 +200,7 @@ while True:
         timer_now = time.time()
         frame = vs.read()
         frame = imutils.resize(frame, width=450)
-        cv2.imshow("Frame", frame)
+        cv2.imshow("icon", icon)
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rects = detector(gray, 0)
@@ -205,11 +212,18 @@ while True:
           try:
             unknown_encoding = face_recognition.face_encodings(unknown_image)[0]
             result = face_recognition.compare_faces(faces, unknown_encoding, tolerance = 0.4)
-            if result[0] == True:
+            if result[0] == False:
                data["unknown"] = 'y'
-            else:
-               i += 1
-            faces.append( unknown_encoding )
+               print("unknown detected")
+               check = True
+               for j in range(len(result)):
+                  if result[j] == True:
+                     check = False
+                     break
+               if check:
+                  i += 1                  
+                  print("unknown recorded")
+                  faces.append( unknown_encoding )
           except IndexError:
             pass          
           
@@ -223,6 +237,7 @@ while True:
         
         key = cv2.waitKey(1) & 0xFF
         if key == ord("t"):
+          print("[INFO] unknown detecting ends")
           initial()
           time.sleep(1.0)
           break
