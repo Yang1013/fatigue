@@ -11,6 +11,7 @@ import face_recognition
 import myDetector
 import json
 import os
+import signal
 
 EYE_CLOSE_TIMES  = 2
 MOUTH_OPEN_TIMES = 2
@@ -49,6 +50,14 @@ i = 0
 data = {"frequency" : 0, "close_eye" : 'n', "yawn" : 'n', "posture" : 'n', "unknown" : 'n'}
 final = ""
 
+class Timeout(Exception):
+    pass
+
+def handler(signum, frame):
+    raise Timeout
+
+signal.signal(signal.SIGALRM, handler)
+
 vs = VideoStream(src=0)
 vs.start()
 
@@ -70,9 +79,12 @@ def initial():
           # array
           shape = predictor(gray, rect)
           shape = face_utils.shape_to_np(shape)           
-      # show the frame
-      cv2.imshow("icon", icon)
-      key = cv2.waitKey(1) & 0xFF
+      try:
+          signal.alarm(0.01)
+          key = input()
+          signal.alarm(0)
+      except:
+          pass
 
       # if the `p` key was pressed, then complete initialize
       if key == ord("p"):
@@ -185,9 +197,12 @@ while True:
             print("posture")
             timer_abnormal = -1
 
-    # show the frame
-    cv2.imshow("icon", icon)
-    key = cv2.waitKey(1) & 0xFF
+    try:
+        signal.alarm(0.01)
+        key = input()
+        signal.alarm(0)
+    except:
+        pass
 
     # if 't' is pressed, see if other person come
     if key == ord("t"):
@@ -236,7 +251,13 @@ while True:
             final = ""
             timer_freq = timer_now
         
-        key = cv2.waitKey(1) & 0xFF
+        try:
+          signal.alarm(0.01)
+          key = input()
+          signal.alarm(0)
+        except:
+          pass
+
         if key == ord("t"):
           os.remove(filename)
           i -= 1
