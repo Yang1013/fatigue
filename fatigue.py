@@ -11,7 +11,13 @@ import face_recognition
 import myDetector
 import json
 import os
-import signal
+import ASUS.GPIO as GPIO
+
+GPIO.setwarnings(False)
+GPIO.setmode(GPIO.ASUS)
+SENSE = 257
+GPIO.setup(SENSE, GPIO.IN)
+key = 0
 
 EYE_CLOSE_TIMES  = 2
 MOUTH_OPEN_TIMES = 2
@@ -80,17 +86,11 @@ def initial():
           # array
           shape = predictor(gray, rect)
           shape = face_utils.shape_to_np(shape)           
-      
-      key = None
-      try:
-          signal.alarm(1)
-          key = input()
-          signal.alarm(0)
-      except:
-          pass
 
       # if the `p` key was pressed, then complete initialize
-      if key == "p":
+      if key != GPIO.input(SENSE):
+          global key 
+          key = GPIO.input(SENSE)
           cv2.imwrite("user.jpg", frame)
           try:
             global user_image
@@ -204,17 +204,10 @@ while True:
             data["posture"] = 'y'
             print("posture")
             timer_abnormal = -1
-    
-    key = None
-    try:
-        signal.alarm(0.5)
-        key = input()
-        signal.alarm(0)
-    except:
-        pass
 
     # if 't' is pressed, see if other person come
-    if key == "t":
+    if key != GPIO.input(SENSE):
+      key = GPIO.input(SENSE)
       print("[INFO] unknown detecting starts") 
       time.sleep(1.0)
       timer_freq = time.time()     
@@ -257,27 +250,15 @@ while True:
             data = {"frequency" : 0, "close_eye" : 'n', "yawn" : 'n', "posture" : 'n', "unknown" : 'n'}
             final = ""
             timer_freq = timer_now
-        
-        key = None
-        try:
-          signal.alarm(1)
-          key = input()
-          signal.alarm(0)
-        except:
-          pass
          
-        if key == "t":
+        if key != GPIO.input(SENSE):
+          key = GPIO.input(SENSE)
           os.remove(filename)
           i -= 1
           print("[INFO] unknown detecting ends")
           initial()
           time.sleep(1.0)
           break
-
-    # if 'q' is pressed, break from the loop
-    if key == "q":
-        cv2.destroyAllWindows()
-        break
  
 # do a bit of cleanup
 vs.stop()
