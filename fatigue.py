@@ -10,6 +10,7 @@ import cv2
 import face_recognition
 import myDetector
 import json
+import os
 
 EYE_CLOSE_TIMES  = 2
 MOUTH_OPEN_TIMES = 2
@@ -44,6 +45,7 @@ timer_sleepy     = -1
 timer_yawn       = -1
 timer_abnormal   = -1
 
+i = 0
 data = {"frequency" : 0, "close_eye" : 'n', "yawn" : 'n', "posture" : 'n', "unknown" : 'n'}
 final = ""
 
@@ -191,7 +193,6 @@ while True:
     if key == ord("t"):
       print("[INFO] unknown detecting starts") 
       time.sleep(1.0)
-      i = 0
       timer_freq = time.time()
       user_image = face_recognition.load_image_file("user.jpg")
       user_encoding = face_recognition.face_encodings(user_image)[0]      
@@ -237,6 +238,8 @@ while True:
         
         key = cv2.waitKey(1) & 0xFF
         if key == ord("t"):
+          os.remove(filename)
+          i -= 1
           print("[INFO] unknown detecting ends")
           initial()
           time.sleep(1.0)
