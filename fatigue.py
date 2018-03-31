@@ -42,7 +42,7 @@ timer_sleepy     = -1
 timer_yawn       = -1
 timer_abnormal   = -1
 
-data = {"frequency" : 0, "close_eye" : 'N', "yawn" : 'N', "posture" : 'N', "unknown" : 'N'}
+data = {"frequency" : 0, "close_eye" : 'n', "yawn" : 'n', "posture" : 'n', "unknown" : 'n'}
 final = ""
 
 def initial():
@@ -147,7 +147,7 @@ while True:
             final = json.dumps(data)
             with open("detect.txt", 'w') as f:
               f.write(final)
-            data = {"frequency" : 0, "close_eye" : 'N', "yawn" : 'N', "posture" : 'N', "unknown" : 'N'}
+            data = {"frequency" : 0, "close_eye" : 'n', "yawn" : 'n', "posture" : 'n', "unknown" : 'n'}
             final = ""
             timer_freq = timer_now
             blink_frequency = 0
@@ -156,20 +156,20 @@ while True:
         # print sleepy message
         timer_sleepy = myDetector.update_timer(eye_close, timer_sleepy)
         if timer_now - timer_sleepy >= EYE_CLOSE_TIMES and timer_sleepy > 0:
-            data["close_eye"] = 'Y'
+            data["close_eye"] = 'y'
             timer_sleepy = 0
         
         # if the mouth open for more than 2 seconds,
         # print yawn message
         timer_yawn = myDetector.update_timer(mouth_open, timer_yawn)  
         if timer_now - timer_yawn >= MOUTH_OPEN_TIMES and timer_yawn > 0:
-            data["yawn"] = 'Y'
+            data["yawn"] = 'y'
             timer_yawn = 0
 
         # see if abnormal pos detected
         timer_abnormal = myDetector.update_timer(abnormal, timer_abnormal)
         if timer_now - timer_abnormal >= ABNORMAL_TIMES and timer_abnormal > 0:
-            data["posture"] = 'Y'
+            data["posture"] = 'y'
             timer_abnormal = -1
 
     # show the frame
@@ -204,14 +204,14 @@ while True:
           
           result = face_recognition.compare_faces(faces, unknown_encoding, tolerance = 0.4)
           if result[0] == True:
-            data["unknown"] = 'Y'
+            data["unknown"] = 'y'
           faces.append( unknown_encoding )
           
         if timer_now - timer_freq >= 60:
             final = json.dumps(data)
             with open("detect.txt", 'w') as f:
               f.write(final)
-            data = {"frequency" : 0, "close_eye" : 'N', "yawn" : 'N', "posture" : 'N', "unknown" : 'N'}
+            data = {"frequency" : 0, "close_eye" : 'n', "yawn" : 'n', "posture" : 'n', "unknown" : 'n'}
             final = ""
             timer_freq = timer_now
         
