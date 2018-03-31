@@ -43,6 +43,7 @@ timer_yawn       = -1
 timer_abnormal   = -1
 
 data = {"frequency" : 0, "close_eye" : 'N', "yawn" : 'N', "posture" : 'N', "unknown" : 'N'}
+final = ""
 
 def initial():
   time.sleep(1.0)
@@ -130,7 +131,7 @@ while True:
         mouth_open = myDetector.mouth_open_detector(mouth)
         abnormal = myDetector.pos(shape, dist_btw_eyes, dist_btw_nose,
                                   slope_btw_eyes)                           
-
+        
         # compute blink frequency
         if eye_close and not blink_detected:
             blink_frequency += 1
@@ -138,6 +139,19 @@ while True:
         elif not eye_close:
             blink_detected = False
 
+        if timer_now - timer_freq >= 60:
+            if blink_frequency >= 99:
+              data["frequency"] = 99
+            else:
+              data["frequency"] = blink_frequency
+            final = json.dumps(data)
+            with open("detect.txt", 'w') as f:
+              f.write(final)
+            data = {"frequency" : 0, "close_eye" : 'N', "yawn" : 'N', "posture" : 'N', "unknown" : 'N'}
+            final = ""
+            timer_freq = timer_now
+            blink_frequency = 0
+        
         # if the eye close for more than 2 seconds,
         # print sleepy message
         timer_sleepy = myDetector.update_timer(eye_close, timer_sleepy)
@@ -158,46 +172,49 @@ while True:
             data["posture"] = 'Y'
             timer_abnormal = -1
 
-        if timer_now - timer_freq >= 60:
-            if blink_frequency >= 99:
-              data["frequency"] = 99
-            else:
-              data["frequency"] = blink_frequency
-            final = json.dumps(data)
-            with open("rrr.txt", 'w') as f:
-              f.write(final)
-            timer_freq = timer_now
-            blink_frequency = 0
-
     # show the frame
     cv2.imshow("Frame", frame)
     key = cv2.waitKey(1) & 0xFF
 
     # if 't' is pressed, see if other person come
     if key == ord("t"):
+      i = 0
+      timer_freq = time.time()
+      user_image = face_recognition.load_image_file("user.jpg")
+      user_encoding = face_recognition.face_encodings(user_image)[0]      
+      faces = [ user_encoding ]
       while True:
+        i += 1
+        timer_now = time.time()
         frame = vs.read()
         frame = imutils.resize(frame, width=450)
         cv2.imshow("Frame", frame)
-        cv2.imwrite("unknown.jpg", frame)
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rects = detector(gray, 0)
         
         if len(rects) > 0:
-          user_image = face_recognition.load_image_file("user.jpg")
-          unknown_image = face_recognition.load_image_file("unknown.jpg")
-
-          user_encoding = face_recognition.face_encodings(user_image)[0]
+          filename = "unknown" + str(i) + ".jpg"
+          cv2.imwrite(filename, frame)
+          unknown_image = face_recognition.load_image_file(filename)          
           try:
             unknown_encoding = face_recognition.face_encodings(unknown_image)[0]
           except IndexError:
             pass
           
-          result = face_recognition.compare_faces([user_encoding], unknown_encoding, tolerance = 0.4)
+          result = face_recognition.compare_faces(faces, unknown_encoding, tolerance = 0.4)
           if result[0] == True:
             data["unknown"] = 'Y'
-
+          faces.append( unknown_encoding )
+          
+        if timer_now - timer_freq >= 60:
+            final = json.dumps(data)
+            with open("detect.txt", 'w') as f:
+              f.write(final)
+            data = {"frequency" : 0, "close_eye" : 'N', "yawn" : 'N', "posture" : 'N', "unknown" : 'N'}
+            final = ""
+            timer_freq = timer_now
+        
         key = cv2.waitKey(1) & 0xFF
         if key == ord("t"):
           initial()
