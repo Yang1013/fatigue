@@ -25,7 +25,8 @@ slope_btw_eyes   = -1
 icon = cv2.imread("./1.png")
 
 # initial current user
-user = None
+user_image = None
+user_encoding = None
 
 # grab the indexes of the facial landmarks for the left and
 # right eye, respectively
@@ -92,7 +93,10 @@ def initial():
       if key == "p":
           cv2.imwrite("user.jpg", frame)
           try:
+            global user_image
             user_image = face_recognition.load_image_file("user.jpg")
+            global user_encoding
+            user_encoding = face_recognition.face_encodings(user_image)[0]
             global dist_btw_eyes, dist_btw_nose, slope_btw_eyes 
             dist_btw_eyes, dist_btw_nose, slope_btw_eyes = myDetector.initial(shape) 
             print("[INFO] Initial Complete")
@@ -210,9 +214,7 @@ while True:
     if key == "t":
       print("[INFO] unknown detecting starts") 
       time.sleep(1.0)
-      timer_freq = time.time()
-      user_image = face_recognition.load_image_file("user.jpg")
-      user_encoding = face_recognition.face_encodings(user_image)[0]      
+      timer_freq = time.time()     
       faces = [ user_encoding ]
       while True:
         timer_now = time.time()
