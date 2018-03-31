@@ -173,8 +173,11 @@ while True:
               data["frequency"] = blink_frequency
             final = json.dumps(data)
             with open("detect.txt", 'w') as f:
-              f.write(final)
-            data = {"frequency" : 0, "close_eye" : 'n', "yawn" : 'n', "posture" : 'n', "unknown" : 'n'}
+              f.write(final) 
+            data["frequency"] = 0
+            data["close_eye"] = 'n'
+            data["yawn"] = 'n'
+            data["posture"] = 'n'
             final = ""
             timer_freq = timer_now
             blink_frequency = 0
