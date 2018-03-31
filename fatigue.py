@@ -63,8 +63,6 @@ class Timeout(Exception):
 def handler(signum, frame):
     raise Timeout
 
-signal.signal(signal.SIGALRM, handler)
-
 vs = VideoStream(src=0)
 vs.start()
 
@@ -216,7 +214,6 @@ while True:
         timer_now = time.time()
         frame = vs.read()
         frame = imutils.resize(frame, width=450)
-        cv2.imshow("icon", icon)
 
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         rects = detector(gray, 0)
