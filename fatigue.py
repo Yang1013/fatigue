@@ -79,19 +79,20 @@ def initial():
           # array
           shape = predictor(gray, rect)
           shape = face_utils.shape_to_np(shape)           
+      
+      key = None
       try:
-          signal.alarm(0.01)
+          signal.alarm(1)
           key = input()
           signal.alarm(0)
       except:
           pass
 
       # if the `p` key was pressed, then complete initialize
-      if key == ord("p"):
+      if key == "p":
           cv2.imwrite("user.jpg", frame)
           try:
             user_image = face_recognition.load_image_file("user.jpg")
-            user_encoding = face_recognition.face_encodings(user_image)[0]
             global dist_btw_eyes, dist_btw_nose, slope_btw_eyes 
             dist_btw_eyes, dist_btw_nose, slope_btw_eyes = myDetector.initial(shape) 
             print("[INFO] Initial Complete")
@@ -196,16 +197,17 @@ while True:
             data["posture"] = 'y'
             print("posture")
             timer_abnormal = -1
-
+    
+    key = None
     try:
-        signal.alarm(0.01)
+        signal.alarm(1)
         key = input()
         signal.alarm(0)
     except:
         pass
 
     # if 't' is pressed, see if other person come
-    if key == ord("t"):
+    if key == "t":
       print("[INFO] unknown detecting starts") 
       time.sleep(1.0)
       timer_freq = time.time()
@@ -251,14 +253,15 @@ while True:
             final = ""
             timer_freq = timer_now
         
+        key = None
         try:
-          signal.alarm(0.01)
+          signal.alarm(1)
           key = input()
           signal.alarm(0)
         except:
           pass
-
-        if key == ord("t"):
+         
+        if key == "t":
           os.remove(filename)
           i -= 1
           print("[INFO] unknown detecting ends")
@@ -267,7 +270,7 @@ while True:
           break
 
     # if 'q' is pressed, break from the loop
-    if key == ord("q"):
+    if key == "q":
         cv2.destroyAllWindows()
         break
  
