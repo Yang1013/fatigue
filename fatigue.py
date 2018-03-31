@@ -204,7 +204,7 @@ while True:
     
     key = None
     try:
-        signal.alarm(1)
+        signal.alarm(0.5)
         key = input()
         signal.alarm(0)
     except:
