@@ -45,9 +45,11 @@ timer_abnormal   = -1
 data = {"frequency" : 0, "close_eye" : 'n', "yawn" : 'n', "posture" : 'n', "unknown" : 'n'}
 final = ""
 
+vs = VideoStream(src=0)
+vs.start()
+
 def initial():
   time.sleep(1.0)
-  vs = VideoStream(src=0).start()
   while True:
       # grab the frame from the threaded video file stream, resize
       # it, and convert it to grayscale channels)
@@ -70,20 +72,25 @@ def initial():
 
       # if the `p` key was pressed, then complete initialize
       if key == ord("p"):
-          global dist_btw_eyes, dist_btw_nose, slope_btw_eyes 
-          dist_btw_eyes, dist_btw_nose, slope_btw_eyes = myDetector.initial(shape)
-          cv2.imwrite("user.jpg", frame) 
-          print("[INFO] Initial Complete")
-          global timer_freq
-          timer_freq       = time.time()
-          global timer_sleepy
-          timer_sleepy     = -1
-          global timer_yawn
-          timer_yawn       = -1
-          global timer_abnormal
-          timer_abnormal   = -1
-          vs.stop()
-          return
+          cv2.imwrite("user.jpg", frame)
+          try:
+            user_image = face_recognition.load_image_file("user.jpg")
+            user_encoding = face_recognition.face_encodings(user_image)[0]
+            global dist_btw_eyes, dist_btw_nose, slope_btw_eyes 
+            dist_btw_eyes, dist_btw_nose, slope_btw_eyes = myDetector.initial(shape) 
+            print("[INFO] Initial Complete")
+            global timer_freq
+            timer_freq       = time.time()
+            global timer_sleepy
+            timer_sleepy     = -1
+            global timer_yawn
+            timer_yawn       = -1
+            global timer_abnormal
+            timer_abnormal   = -1
+            return
+          except IndexError:
+            print("[INFO] Initial Failed. Try Again.")
+            pass         
 
 # construct the argument parse and parse the arguments
 ap = argparse.ArgumentParser()
@@ -99,8 +106,6 @@ predictor = dlib.shape_predictor(args["shape_predictor"])
 
 initial()    
 time.sleep(1.0)
-vs = VideoStream(src=0).start()
-
 # loop over frames from the video stream
 while True:
     timer_now = time.time()
@@ -178,13 +183,13 @@ while True:
 
     # if 't' is pressed, see if other person come
     if key == ord("t"):
+      time.sleep(1.0)
       i = 0
       timer_freq = time.time()
       user_image = face_recognition.load_image_file("user.jpg")
       user_encoding = face_recognition.face_encodings(user_image)[0]      
       faces = [ user_encoding ]
       while True:
-        i += 1
         timer_now = time.time()
         frame = vs.read()
         frame = imutils.resize(frame, width=450)
@@ -199,13 +204,14 @@ while True:
           unknown_image = face_recognition.load_image_file(filename)          
           try:
             unknown_encoding = face_recognition.face_encodings(unknown_image)[0]
+            result = face_recognition.compare_faces(faces, unknown_encoding, tolerance = 0.4)
+            if result[0] == True:
+               data["unknown"] = 'y'
+            else:
+               i += 1
+            faces.append( unknown_encoding )
           except IndexError:
-            pass
-          
-          result = face_recognition.compare_faces(faces, unknown_encoding, tolerance = 0.4)
-          if result[0] == True:
-            data["unknown"] = 'y'
-          faces.append( unknown_encoding )
+            pass          
           
         if timer_now - timer_freq >= 60:
             final = json.dumps(data)
@@ -218,6 +224,7 @@ while True:
         key = cv2.waitKey(1) & 0xFF
         if key == ord("t"):
           initial()
+          time.sleep(1.0)
           break
 
     # if 'q' is pressed, break from the loop
